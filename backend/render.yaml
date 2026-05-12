@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: dealance-backend
+    env: docker
+    plan: free # Change to 'starter' or higher for production
+    region: ohio # Change as needed
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dealance-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: dealance-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: GEMINI_API_KEY
+        sync: false # Set manually in Render dashboard
+      - key: GROQ_API_KEY
+        sync: false # Set manually in Render dashboard
+      - key: AWS_ACCESS_KEY_ID
+        sync: false # Set manually in Render dashboard
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false # Set manually in Render dashboard
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_S3_BUCKET
+        sync: false # Set manually in Render dashboard
+
+databases:
+  - name: dealance-db
+    plan: free
+    databaseName: dealance
+    user: dealance_user
+
+  - type: redis
+    name: dealance-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections

@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  name              String
+  email             String         @unique
+  passwordHash      String
+  role              String         @default("ENTREPRENEUR")
+  avatar            String?
+  bio               String?
+  phone             String?
+  linkedIn          String?
+  education         String?
+  networth          String?
+  verified          Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  instagram         String?
+  twitter           String?
+  website           String?
+  company           String?
+  industryFocus     String?
+  aiReports         AIReport[]
+  chatMembers       ChatMember[]
+  comments          Comment[]
+  entrepreneurDeals Deal[]         @relation("EntrepreneurDeals")
+  investorDeals     Deal[]         @relation("InvestorDeals")
+  ideas             Idea[]
+  ideaAccess        IdeaAccess[]   @relation("InvestorAccess")
+  sentMessages      Message[]
+  ndaSignatures     NDASignature[] @relation("InvestorNDA")
+  notifications     Notification[]
+  posts             Post[]
+  postLikes         PostLike[]
+  refreshTokens     RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Idea {
+  id                 String         @id @default(uuid())
+  userId             String
+  businessType       String         @default("STARTUP")
+  companyName        String?
+  tagline            String?
+  logoUrl            String?
+  cardUrl            String?
+  oneLiner           String?
+  detailedProblem    String?
+  solution           String?
+  evidenceUrl        String?
+  pitchDeckUrl       String?
+  videoPitchUrl      String?
+  productDescription String?
+  industry           String?
+  subDomains         String?
+  businessModel      String?
+  targetGeography    String?
+  stage              String?
+  currentCustomers   String?
+  revenue            String?
+  growthRate         String?
+  dailyActiveUsers   Int?
+  currentValuation   String?
+  fundingAmount      String?
+  fundingType        String?
+  equityOffered      String?
+  useOfFunds         String?
+  founderName        String?
+  founderEmail       String?
+  founderPhone       String?
+  teamMembers        String?
+  status             String         @default("DRAFT")
+  currentStep        Int            @default(1)
+  submittedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  visibility         String         @default("PUBLIC")
+  aiReports          AIReport[]
+  deals              Deal[]
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessList         IdeaAccess[]
+  ndaSignatures      NDASignature[]
+  posts              Post[]
+}
+
+model IdeaAccess {
+  id         String   @id @default(uuid())
+  ideaId     String
+  investorId String
+  status     String   @default("INVITED")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  investor   User     @relation("InvestorAccess", fields: [investorId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, investorId])
+}
+
+model NDASignature {
+  id            String   @id @default(uuid())
+  ideaId        String
+  investorId    String
+  signatureText String
+  signedAt      DateTime @default(now())
+  idea          Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  investor      User     @relation("InvestorNDA", fields: [investorId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, investorId])
+}
+
+model AIReport {
+  id             String   @id @default(uuid())
+  ideaId         String
+  userId         String
+  status         String   @default("PENDING")
+  viabilityScore Int?
+  report         String?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  idea           Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id         String     @id @default(uuid())
+  userId     String
+  startupId  String?
+  content    String
+  mediaUrls  String?
+  likesCount Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  comments   Comment[]
+  startup    Idea?      @relation(fields: [startupId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes      PostLike[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model ChatRoom {
+  id        String       @id @default(uuid())
+  type      String       @default("DIRECT")
+  dealId    String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   ChatMember[]
+  messages  Message[]
+}
+
+model ChatMember {
+  id       String   @id @default(uuid())
+  roomId   String
+  userId   String
+  joinedAt DateTime @default(now())
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String
+  type      String   @default("TEXT")
+  metadata  String?
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Deal {
+  id               String   @id @default(uuid())
+  startupId        String
+  investorId       String
+  entrepreneurId   String
+  status           String   @default("PROPOSED")
+  investmentAmount String?
+  equityOffered    String?
+  valuation        String?
+  terms            String?
+  chatRoomId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  entrepreneur     User     @relation("EntrepreneurDeals", fields: [entrepreneurId], references: [id])
+  investor         User     @relation("InvestorDeals", fields: [investorId], references: [id])
+  startup          Idea     @relation(fields: [startupId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id           String   @id @default(uuid())
+  title        String
+  description  String
+  content      String?
+  type         String   @default("ARTICLE")
+  contentUrl   String?
+  thumbnailUrl String?
+  duration     String?
+  category     String?
+  author       String?
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   @default("INFO")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  data      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
